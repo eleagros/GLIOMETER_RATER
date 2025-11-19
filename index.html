@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Rating Platform (Server Progress)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .rating-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #10B981;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+    .rating-slider::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #10B981;
+        cursor: pointer;
+        box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+
+<div id="app" class="w-full max-w-4xl bg-white rounded-xl shadow-2xl p-6 md:p-10">
+    <h1 class="text-3xl font-extrabold text-gray-800 mb-2 text-center">Tumor Cell Content Image Rating</h1>
+    <div id="completion-message" class="mt-4 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 rounded-lg hidden" style="margin-bottom: 2em;">
+        <p class="font-bold text-xl mb-2">🎉 All Done!</p>
+        <p>Thanks a lot for your help!</p>
+    </div>
+
+    <!-- Passcode/Login Screen -->
+    <div id="passcode-screen" class="space-y-6 max-w-md mx-auto py-12">
+        <input type="text" id="username-input" placeholder="Username" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 transition duration-150">
+        <input type="password" id="passcode-input" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 transition duration-150">
+        <button id="passcode-submit" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition duration-150 shadow-md">
+            Access Rating Tool
+        </button>
+        <p id="passcode-error" class="text-sm text-red-500 hidden"></p>
+    </div>
+
+    <!-- Rating Tool -->
+    <div id="rating-tool" class="hidden">
+
+        <!-- Progress -->
+        <div class="mb-6">
+            <p class="text-lg font-semibold text-gray-700 mb-2 flex justify-between">
+                <span>Progress: <span id="progress-text">0 / 200</span></span>
+                <span id="completion-percentage">0% Complete</span>
+            </p>
+            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div id="progress-bar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- Image -->
+        <div class="relative w-full aspect-video bg-gray-200 rounded-xl overflow-hidden shadow-lg mb-6">
+            <img id="current-image" src="" alt="Image to be rated" class="w-full h-full object-cover transition-opacity duration-300">
+            <div id="loading-spinner" class="absolute inset-0 flex items-center justify-center bg-gray-200/70">
+                <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Slider -->
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <label for="rating-input" class="text-xl font-bold text-gray-800">Your Rating (0 - 100):</label>
+                <span id="rating-value" class="text-3xl font-extrabold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-lg shadow-inner min-w-[80px] text-center">50</span>
+            </div>
+            <input type="range" id="rating-input" min="0" max="100" value="50" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer rating-slider transition duration-150">
+        </div>
+
+        <!-- Navigation -->
+        <div class="mt-8 flex justify-between space-x-4">
+            <button id="prev-button" disabled class="px-6 py-3 bg-gray-300 text-gray-600 font-bold rounded-lg hover:bg-gray-400 transition duration-150 shadow-md flex items-center disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+                Previous
+            </button>
+            <button id="next-button" class="px-6 py-3 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 transition duration-150 shadow-md flex items-center">
+                Next Image
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 12h14"></path></svg>
+            </button>
+        </div>
+
+        <!-- Save & Completion -->
+        <div class="text-center mt-8">
+            <button id="logout-button" class="px-6 py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition duration-150 shadow-md flex items-center mx-auto">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7"></path>
+                </svg>
+                Logout
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const NUM_IMAGES = 3;
+const SERVER_URL = "http://localhost:3000"; // adjust if server is elsewhere
+
+let authToken = null;
+let allImages = [];
+let userRatings = {};
+let currentIndex = 0;
+let userId = null; // will be generated or entered
+
+const passcodeScreen = document.getElementById('passcode-screen');
+const ratingTool = document.getElementById('rating-tool');
+const passcodeInput = document.getElementById('passcode-input');
+const passcodeSubmit = document.getElementById('passcode-submit');
+const passcodeError = document.getElementById('passcode-error');
+
+const progressTextEl = document.getElementById('progress-text');
+const completionPercentageEl = document.getElementById('completion-percentage');
+const progressBarEl = document.getElementById('progress-bar');
+const currentImageEl = document.getElementById('current-image');
+const loadingSpinnerEl = document.getElementById('loading-spinner');
+const ratingInputEl = document.getElementById('rating-input');
+const ratingValueEl = document.getElementById('rating-value');
+const prevButton = document.getElementById('prev-button');
+const nextButton = document.getElementById('next-button');
+const logoutButton = document.getElementById('logout-button');
+const completionMessage = document.getElementById('completion-message');
+
+function generateImageList(count) {
+    const images = [];
+    for (let i = 1; i <= count; i++) {
+        const imageId = `image_${i.toString().padStart(3,'0')}`;
+        const hash = imageId.split('').reduce((acc,c)=>acc+c.charCodeAt(0),0);
+        const color = (hash * 1234567).toString(16).slice(0,6).padStart(6,'0');
+        images.push({
+            id: imageId,
+            url: `rating_imgs/${imageId}.png?color=${color}`
+        });
+    }
+    return images;
+}
+
+function updateUI() {
+    updateProgress();
+    updateImageAndControls();
+}
+
+function updateProgress() {
+    const ratedCount = Object.keys(userRatings).length;
+    const totalCount = allImages.length;
+    const percentage = totalCount>0 ? Math.round((ratedCount/totalCount)*100) : 0;
+    progressTextEl.textContent = `${ratedCount} / ${totalCount}`;
+    completionPercentageEl.textContent = `${percentage}% Complete`;
+    progressBarEl.style.width = `${percentage}%`;
+
+    if (ratedCount === totalCount && totalCount>0) completionMessage.classList.remove('hidden');
+    else completionMessage.classList.add('hidden');
+}
+
+function updateImageAndControls() {
+    const currentImage = allImages[currentIndex];
+    const currentRating = userRatings[currentImage.id];
+
+    loadingSpinnerEl.classList.remove('hidden');
+    currentImageEl.src = currentImage.url;
+    currentImageEl.alt = `Image ID: ${currentImage.id}`;
+    currentImageEl.classList.add('opacity-0');
+
+    currentImageEl.onload = currentImageEl.onerror = () => {
+        loadingSpinnerEl.classList.add('hidden');
+        currentImageEl.classList.remove('opacity-0');
+    };
+
+    ratingInputEl.value = currentRating !== undefined ? currentRating : 50;
+    ratingValueEl.textContent = ratingInputEl.value;
+
+    prevButton.disabled = currentIndex === 0;
+
+    if(currentIndex===allImages.length-1){
+        nextButton.innerHTML=`Finish Rating`;
+        nextButton.classList.remove('bg-emerald-600','hover:bg-emerald-700');
+        nextButton.classList.add('bg-yellow-600','hover:bg-yellow-700');
+    } else {
+        nextButton.innerHTML=`Next Image <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 12h14"></path></svg>`;
+        nextButton.classList.add('bg-emerald-600','hover:bg-emerald-700');
+        nextButton.classList.remove('bg-yellow-600','hover:bg-yellow-700');
+    }
+}
+
+function saveCurrentRating() {
+    const currentImage = allImages[currentIndex];
+    const newRating = parseInt(ratingInputEl.value,10);
+    userRatings[currentImage.id]=newRating;
+    updateProgress();
+    saveProgressToServer();
+}
+
+// --- Server Integration ---
+async function loginToServer(username, passcode){
+    try {
+        const res = await fetch(`${SERVER_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, passcode })
+        });
+        const data = await res.json();
+        if (data.success && data.token) {
+            authToken = data.token;
+            userId = data.userId; // from server
+            return true;
+        }
+        return false;
+    } catch(e) { console.error('Login failed', e); return false; }
+}
+
+async function saveProgressToServer(){
+    if(!userId || !authToken) return;
+    const state = { allImages: allImages.map(img=>img.id), ratings: userRatings, currentIndex: currentIndex+1, timestamp: new Date().toISOString() };
+    try {
+        await fetch(`${SERVER_URL}/progress/${userId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify(state)
+        });
+    } catch(e){ console.error("Failed to save progress:", e); }
+}
+
+async function loadProgressFromServer(){
+    if(!userId || !authToken) return;
+    try {
+        const res = await fetch(`${SERVER_URL}/progress/${userId}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if(data.ratings){
+            userRatings = data.ratings;
+            currentIndex = data.currentIndex || 0;
+            updateUI();
+        }
+    } catch(e){ console.error("Failed to load progress:", e); }
+}
+
+
+// --- Event Listeners ---
+const usernameInput = document.getElementById('username-input');
+
+passcodeSubmit.addEventListener('click', async ()=>{
+    const username = usernameInput.value.trim();
+    const passcode = passcodeInput.value.trim();
+    const success = await loginToServer(username, passcode);
+    if(success){
+        passcodeScreen.classList.add('hidden');
+        ratingTool.classList.remove('hidden');
+        allImages = generateImageList(NUM_IMAGES);
+        await loadProgressFromServer();
+        updateUI();
+    } else {
+        passcodeError.textContent="Incorrect username or passcode. Please try again.";
+        passcodeError.classList.remove('hidden');
+    }
+});
+
+ratingInputEl.addEventListener('input', (e)=>{
+    ratingValueEl.textContent=e.target.value;
+    // saveCurrentRating();
+});
+
+nextButton.addEventListener('click', ()=>{
+    saveCurrentRating();
+    if(currentIndex<allImages.length-1){
+        currentIndex++;
+        updateUI();
+        document.getElementById('app').scrollTo({top:0,behavior:'smooth'});
+    }
+});
+
+prevButton.addEventListener('click', ()=>{
+    saveCurrentRating();
+    if(currentIndex>0){
+        currentIndex--;
+        updateUI();
+        document.getElementById('app').scrollTo({top:0,behavior:'smooth'});
+    }
+});
+
+logoutButton.addEventListener('click', () => {
+    // Clear user session
+    authToken = null;
+    userId = null;
+    userRatings = {};
+    currentIndex = 0;
+
+    // Reset UI
+    ratingTool.classList.add('hidden');
+    passcodeScreen.classList.remove('hidden');
+    passcodeInput.value = '';
+    usernameInput.value = '';
+    passcodeError.classList.add('hidden');
+    updateProgress();
+    currentImageEl.src = '';
+});
+
+</script>
+</body>
+</html>
