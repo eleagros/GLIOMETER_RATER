@@ -223,7 +223,7 @@ async function loginToServer(username, passcode){
 
 async function saveProgressToServer(){
     if(!userId || !authToken) return;
-    const state = { allImages: allImages.map(img=>img.id), ratings: userRatings, currentIndex: currentIndex+1, timestamp: new Date().toISOString() };
+    const state = { allImages: allImages.map(img=>img.id), ratings: userRatings, currentIndex: currentIndex, timestamp: new Date().toISOString() };
     try {
         await fetch(`${SERVER_URL}/progress/${userId}`, {
             method: 'POST',
