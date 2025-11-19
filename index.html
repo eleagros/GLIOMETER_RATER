@@ -292,6 +292,7 @@ prevButton.addEventListener('click', ()=>{
         updateUI();
         document.getElementById('app').scrollTo({top:0,behavior:'smooth'});
     }
+    completionMessage.classList.add('hidden');
 });
 
 logoutButton.addEventListener('click', () => {
