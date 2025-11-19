@@ -245,7 +245,7 @@ async function loadProgressFromServer(){
         const data = await res.json();
         if(data.ratings){
             userRatings = data.ratings;
-            currentIndex = data.currentIndex || 0;
+            currentIndex = Math.min(data.currentIndex || 0, allImages.length - 1);
             updateUI();
         }
     } catch(e){ console.error("Failed to load progress:", e); }
